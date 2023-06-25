@@ -54,6 +54,9 @@ namespace TransmitNPCLocation.framework
         /// <summary> icon.</summary>
         private List<ClickableTextureComponent> TransmitComponents;
 
+        /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
+        private readonly bool WasHudEnabled;
+
         /// <summary>The spacing around the scroll buttons.</summary>
         private readonly int ScrollButtonGutter = 15;
 
@@ -70,6 +73,7 @@ namespace TransmitNPCLocation.framework
             this.npcList = npcList;
             this.Monitor = monitor;
             this.ScrollAmount = scroll;
+            this.WasHudEnabled = Game1.displayHUD;
 
             // add scroll buttons
             this.ScrollUpButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.UpArrow, 1);
@@ -156,6 +160,26 @@ namespace TransmitNPCLocation.framework
             base.update(time);
         }
 
+        /// <summary>Clean up after the menu when it's disposed.</summary>
+        public void Dispose()
+        {
+            this.ContentBlendState.Dispose();
+
+            this.CleanupImpl();
+        }
+
+        /// <summary>Perform any cleanup needed when the menu exits.</summary>
+        protected override void cleanupBeforeExit()
+        {
+            this.CleanupImpl();
+            base.cleanupBeforeExit();
+        }
+
+        /// <summary>Perform cleanup specific to the lookup menu.</summary>
+        private void CleanupImpl()
+        {
+            Game1.displayHUD = this.WasHudEnabled;
+        }
 
         /*********
         ** Private methods
