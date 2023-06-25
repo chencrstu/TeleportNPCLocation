@@ -10,7 +10,7 @@ using StardewValley;
 using StardewValley.Characters;
 using StardewValley.Locations;
 using StardewValley.Menus;
-using TransmitNPCLocation.framework;
+using TeleportNPCLocation.framework;
 using xTile;
 using xTile.Dimensions;
 using xTile.Layers;
@@ -21,7 +21,7 @@ using xTile.Tiles;
 // 3. 实现传送能力 done
 // 4. 定制物品，贴图，售价，售出位置 // Content Patcher https://stardewvalleywiki.com/Modding:Content_Patcher
 
-namespace TransmitNPCLocation
+namespace TeleportNPCLocation
 {
     /// <summary>The mod entry point.</summary>
     internal sealed class ModEntry : Mod
@@ -44,7 +44,7 @@ namespace TransmitNPCLocation
             helper.Events.Content.AssetRequested += this.OnAssetRequested;
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
 
-            helper.ConsoleCommands.Add("transmit_setname", "Sets transmit to npc's name.\n\nUsage: transmit_setname <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.SetFindNPCName);
+            helper.ConsoleCommands.Add("teleport_setname", "Sets teleport to npc's name.\n\nUsage: teleport_setname <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.SetFindNPCName);
         }
 
         /*********
@@ -56,7 +56,7 @@ namespace TransmitNPCLocation
         private void SetFindNPCName(string command, string[] args)
         {
             this.findNPCName = args[0];
-            this.Monitor.Log($"OK, set transmit to npc's name: {args[0]}.", LogLevel.Info);
+            this.Monitor.Log($"OK, set teleport to npc's name: {args[0]}.", LogLevel.Info);
         }
 
         /// <inheritdoc cref="IDisplayEvents.MenuChanged"/>

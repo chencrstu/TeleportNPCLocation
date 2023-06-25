@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace TransmitNPCLocation.framework
+namespace TeleportNPCLocation.framework
 {
     /// <summary>A single sprite in a spritesheet.</summary>
     internal class SpriteInfo

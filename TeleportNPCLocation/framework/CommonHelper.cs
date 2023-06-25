@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
 
-namespace TransmitNPCLocation.framework
+namespace TeleportNPCLocation.framework
 {
     internal static class CommonHelper
     {

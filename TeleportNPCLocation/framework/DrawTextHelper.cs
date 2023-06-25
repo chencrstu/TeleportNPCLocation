@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using System.Collections.Generic;
 
-namespace TransmitNPCLocation.framework
+namespace TeleportNPCLocation.framework
 {
     /// <summary>Provides utility methods for drawing to the screen.</summary>
     internal static class DrawTextHelper

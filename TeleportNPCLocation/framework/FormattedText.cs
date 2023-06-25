@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace TransmitNPCLocation.framework
+namespace TeleportNPCLocation.framework
 {
     /// <summary>A snippet of formatted text.</summary>
     internal struct FormattedText : IFormattedText

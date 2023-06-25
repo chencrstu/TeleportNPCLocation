@@ -11,7 +11,7 @@ using StardewValley;
 using StardewValley.Menus;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace TransmitNPCLocation.framework
+namespace TeleportNPCLocation.framework
 {
 	public class NPCMenu : IClickableMenu
     {
@@ -52,7 +52,7 @@ namespace TransmitNPCLocation.framework
         private readonly ClickableTextureComponent ScrollDownButton;
 
         /// <summary> icon.</summary>
-        private List<ClickableTextureComponent> TransmitComponents;
+        private List<ClickableTextureComponent> teleportComponents;
 
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
@@ -79,7 +79,7 @@ namespace TransmitNPCLocation.framework
             this.ScrollUpButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.UpArrow, 1);
             this.ScrollDownButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.DownArrow, 1);
 
-            this.TransmitComponents = new List<ClickableTextureComponent>();
+            this.teleportComponents = new List<ClickableTextureComponent>();
 
             // update layout
             this.UpdateLayout();
@@ -253,13 +253,13 @@ namespace TransmitNPCLocation.framework
                 this.ScrollDown();
 
 
-            // transmit to npc location
+            // teleport to npc location
             int index = 0;
-            foreach (ClickableTextureComponent component in this.TransmitComponents)
+            foreach (ClickableTextureComponent component in this.teleportComponents)
             {
                 if (component.containsPoint(x, y))
                 {
-                    this.TransmitToNPCLocation(this.npcList[index]);
+                    this.teleportToNPCLocation(this.npcList[index]);
                     break;
                 }
                 index++;
@@ -336,7 +336,7 @@ namespace TransmitNPCLocation.framework
                             topOffset += lineHeight;
 
                             // draw npc list
-                            this.TransmitComponents = new List<ClickableTextureComponent>();
+                            this.teleportComponents = new List<ClickableTextureComponent>();
                             if (this.npcList.Count > 0)
                             {
                                 float cellPadding = 3;
@@ -348,10 +348,10 @@ namespace TransmitNPCLocation.framework
                                     // draw Portrait
                                     Vector2 portraitPosition = new Vector2(x + leftOffset + cellPadding, y + topOffset + cellPadding);
                                     Vector2 portraitSize = new Vector2(NPC.portrait_width, NPC.portrait_height);
-                                    ClickableTextureComponent transmitButton = new ClickableTextureComponent(Rectangle.Empty, npc.Portrait, new Rectangle(0, 0, NPC.portrait_width, NPC.portrait_height), 1);
-                                    transmitButton.bounds = new Rectangle((int)portraitPosition.X, (int)portraitPosition.Y, (int)portraitSize.X, (int)portraitSize.Y);
-                                    transmitButton.draw(contentBatch);
-                                    this.TransmitComponents.Add(transmitButton);
+                                    ClickableTextureComponent teleportButton = new ClickableTextureComponent(Rectangle.Empty, npc.Portrait, new Rectangle(0, 0, NPC.portrait_width, NPC.portrait_height), 1);
+                                    teleportButton.bounds = new Rectangle((int)portraitPosition.X, (int)portraitPosition.Y, (int)portraitSize.X, (int)portraitSize.Y);
+                                    teleportButton.draw(contentBatch);
+                                    this.teleportComponents.Add(teleportButton);
 
                                     // draw value label
                                     Vector2 valuePosition = new Vector2(x + leftOffset + portraitWidth + cellPadding * 3, y + topOffset + cellPadding);
@@ -411,7 +411,7 @@ namespace TransmitNPCLocation.framework
             this.Monitor.InterceptErrors("handling an error in the lookup code", () => this.exitThisMenu());
         }
 
-        private void TransmitToNPCLocation(NPC npc)
+        private void teleportToNPCLocation(NPC npc)
         {
             // Get npc location
             GameLocation location = npc.currentLocation;
