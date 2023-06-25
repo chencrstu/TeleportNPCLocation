@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -8,6 +9,8 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Characters;
 using StardewValley.Locations;
+using StardewValley.Menus;
+using TransmitNPCLocation.framework;
 using xTile;
 using xTile.Dimensions;
 using xTile.Layers;
@@ -27,6 +30,9 @@ namespace TransmitNPCLocation
         private string  findNPCName = "Emily";
         private readonly string[] NPCNames = { "Robin", "Shane", "George", "Evelyn", "Alex", "Haley", "Emily", "Jodi", "Vincent", "Sam", "Clint", "Pierre", "Caroline", "Abigail", "Gus", "Willy", "Maru", "Demetrius", "Sebastian", "Linus", "Marnie", "Jas", "Leah", "Dwarf", "Bouncer", "Gunther", "Marlon", "Henchman", "Birdie", "Mister Qi" };
 
+        /// <summary>The previous menus shown before the current lookup UI was opened.</summary>
+        private readonly PerScreen<Stack<IClickableMenu>> PreviousMenus = new(() => new());
+
         /*********
         ** Public methods
         *********/
@@ -36,6 +42,7 @@ namespace TransmitNPCLocation
         {
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             helper.Events.Content.AssetRequested += this.OnAssetRequested;
+            helper.Events.Display.MenuChanged += this.OnMenuChanged;
 
             helper.ConsoleCommands.Add("transmit_setname", "Sets transmit to npc's name.\n\nUsage: transmit_setname <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.SetFindNPCName);
         }
@@ -50,6 +57,16 @@ namespace TransmitNPCLocation
         {
             this.findNPCName = args[0];
             this.Monitor.Log($"OK, set transmit to npc's name: {args[0]}.", LogLevel.Info);
+        }
+
+        /// <inheritdoc cref="IDisplayEvents.MenuChanged"/>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
+        {
+            // restore the previous menu if it was hidden to show the lookup UI
+            if (e.NewMenu == null && (e.OldMenu is NPCMenu) && this.PreviousMenus.Value.Any())
+                Game1.activeClickableMenu = this.PreviousMenus.Value.Pop();
         }
 
         /// <inheritdoc cref="IContentEvents.AssetRequested"/>
@@ -102,39 +119,8 @@ namespace TransmitNPCLocation
             if (!e.Button.ToString().Equals("P"))
                 return;
 
-            List<NPC> villagers = GetVillagers();
-            NPC findNPC = null;
-
-            foreach (var npc in villagers)
-            {
-                if (npc.currentLocation == null)
-                {
-                    continue;
-                }
-
-                string locationName = npc.currentLocation.uniqueName.Value ?? npc.currentLocation.Name;
-                GameLocation location = npc.currentLocation;
-
-                //this.Monitor.Log($"npc name:{npc.Name}", LogLevel.Debug);
-
-                if (npc.Name.Equals(this.findNPCName))
-                {
-                    findNPC = npc;
-                    string result = $"name:{npc.Name}, displayName:{npc.displayName}, location:{locationName}, x:{npc.getTileX()}, y: {npc.getTileY()}, birthday: {npc.Birthday_Day}, gender: {npc.Gender}, age: {npc.Age}\n";
-                    this.Monitor.Log($"find npc info:{result}", LogLevel.Debug);
-                    break;
-                }
-
-            }
-
-            if (findNPC != null)
-            {
-                TeleportToNPCLocation(findNPC);
-            }
-            else
-            {
-                this.Monitor.Log($"Can't find npc name:{this.findNPCName}", LogLevel.Debug);
-            }
+            // try toggle npc menu list
+            TryToggleNPCMenu();
 
         }
 
@@ -166,63 +152,89 @@ namespace TransmitNPCLocation
             return villagers;
         }
 
-        private void TeleportToNPCLocation(NPC npc)
+        private NPC getFindNPCInfo()
         {
-            // Get npc location
-            GameLocation location = npc.currentLocation;
-            //GameLocation Location = Utility.fuzzyLocationSearch(locationName);
-            if (location == null)
+            List<NPC> villagers = GetVillagers();
+            NPC findNPC = null;
+
+            foreach (var npc in villagers)
             {
-                this.Monitor.Log($"Can't find npc location:{this.findNPCName}", LogLevel.Debug);
-                return;
+                if (npc.currentLocation == null)
+                {
+                    continue;
+                }
+
+                string locationName = npc.currentLocation.uniqueName.Value ?? npc.currentLocation.Name;
+                GameLocation location = npc.currentLocation;
+
+                //this.Monitor.Log($"npc name:{npc.Name}", LogLevel.Debug);
+
+                if (npc.Name.Equals(this.findNPCName))
+                {
+                    findNPC = npc;
+                    string result = $"name:{npc.Name}, displayName:{npc.displayName}, location:{locationName}, x:{npc.getTileX()}, y: {npc.getTileY()}, birthday: {npc.Birthday_Day}, gender: {npc.Gender}, age: {npc.Age}\n";
+                    this.Monitor.Log($"find npc info:{result}", LogLevel.Debug);
+                    break;
+                }
+
             }
 
-            DelayedAction.delayedBehavior teleportFunction = delegate {
-                //Insert here the coordinates you want to teleport to
-                int[] offset = FindNPCAroundSpace(location, npc);
-
-                int X = npc.getTileX() + offset[0];
-                int Y = npc.getTileY() + offset[1];
-
-                // The direction you want the Farmer to face after the teleport
-                // 0 = up, 1 = right, 2 = down, 3 = left
-                int direction = offset[2];
-
-                // The teleport command itself
-                Game1.warpFarmer(new LocationRequest(location.NameOrUniqueName, location.uniqueName.Value != null, location), X, Y, direction);
-            };
-
-
-            // Delayed action to be executed after a set time (here 0,1 seconds)
-            // Teleporting without the delay may prove to be problematic
-            DelayedAction.functionAfterDelay(teleportFunction, 100);
+            return findNPC;
         }
 
-        private int[] FindNPCAroundSpace(GameLocation location, NPC npc)
+        /****
+        ** NPC menu helpers
+        ****/
+        /// <summary>Toggle the npc UI if applicable.</summary>
+        private void TryToggleNPCMenu()
         {
-            // Define offset array
-            int[,] tileOffset = { { -1, 0 , 1}, { 1, 0, 3}, { 0, -1, 2 }, { 0, 1, 0 }, { -1, -1, 1 }, { 1, -1, 3 }, { -1, 1, 1 }, { 1, 1, 3 } };
-            int[] result = { 0, 0, 0 };
+            if (Game1.activeClickableMenu is NPCMenu)
+                this.hideNPCMenu();
+            else if (Context.IsWorldReady && Game1.activeClickableMenu is not NPCMenu)
+                this.showNPCMenu();
+        }
 
-            for (int i = 0; i < tileOffset.GetLength(0); i++)
+        private void hideNPCMenu()
+        {
+            if (Game1.activeClickableMenu is NPCMenu)
             {
-                int xTile = npc.getTileX() + tileOffset[i, 0];
-                int yTile = npc.getTileY() + tileOffset[i, 1];
-                this.Monitor.Log($"tieleOffsetX:{tileOffset[i, 0]},tieleOffsetY:{tileOffset[i, 1]}", LogLevel.Debug);
-
-                if (location.doesTileHaveProperty(xTile, yTile, "Water", "Back") != null)
-                    continue;
-
-                if (location.doesTileHaveProperty(xTile, yTile, "Passable", "Buildings") == null)
-                    continue;
-                
-                result = new int[]{ tileOffset[i, 0], tileOffset[i, 1], tileOffset[i, 2] };
-                
+                Game1.playSound("bigDeSelect"); // match default behaviour when closing a menu
+                Game1.activeClickableMenu = null;
             }
+        }
 
-            this.Monitor.Log($"find npc around space:{result[0]},{result[1]},{result[2]}", LogLevel.Debug);
+        private void showNPCMenu()
+        {
+            StringBuilder logMessage = new("Received a npc list request...");
+            this.Monitor.InterceptErrors("fetch npc list", () =>
+            {
+                List<NPC> villagers = GetVillagers();
 
-            return result;
+                this.PushMenu(new NPCMenu(npcList: villagers, monitor: this.Monitor, scroll: 160));
+
+            });
+        }
+
+        private void PushMenu(IClickableMenu menu)
+        {
+            if (this.ShouldRestoreMenu(Game1.activeClickableMenu))
+            {
+                this.PreviousMenus.Value.Push(Game1.activeClickableMenu);
+                this.Helper.Reflection.GetField<IClickableMenu>(typeof(Game1), "_activeClickableMenu").SetValue(menu); // bypass Game1.activeClickableMenu, which disposes the previous menu
+            }
+            else
+                Game1.activeClickableMenu = menu;
+        }
+
+        /// <summary>Get whether a given menu should be restored when the lookup ends.</summary>
+        /// <param name="menu">The menu to check.</param>
+        private bool ShouldRestoreMenu(IClickableMenu? menu)
+        {
+            // no menu
+            if (menu == null)
+                return false;
+
+            return true;
         }
     }
 }
