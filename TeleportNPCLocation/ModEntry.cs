@@ -21,8 +21,6 @@ using xTile.Tiles;
 // 1. 获取npc的位置 done
 // 2. 定位可传送位置，碰撞检测 doing
 // 3. 实现传送能力 done
-// 4. 定制物品，贴图，售价，售出位置 // Content Patcher https://stardewvalleywiki.com/Modding:Content_Patcher
-
 namespace TeleportNPCLocation
 {
     /// <summary>The mod entry point.</summary>
@@ -35,7 +33,7 @@ namespace TeleportNPCLocation
         private string  findNPCName = "Emily";
         private readonly string[] NPCNames = { "Robin", "Shane", "George", "Evelyn", "Alex", "Haley", "Emily", "Jodi", "Vincent", "Sam", "Clint", "Pierre", "Caroline", "Abigail", "Gus", "Willy", "Maru", "Demetrius", "Sebastian", "Linus", "Marnie", "Jas", "Leah", "Dwarf", "Bouncer", "Gunther", "Marlon", "Henchman", "Birdie", "Mister Qi" };
 
-        /// <summary>The previous menus shown before the current lookup UI was opened.</summary>
+        /// <summary>The previous menus shown before the current npc menu was opened.</summary>
         private readonly PerScreen<Stack<IClickableMenu>> PreviousMenus = new(() => new());
 
         /*********
@@ -99,7 +97,7 @@ namespace TeleportNPCLocation
         /// <param name="e">The event data.</param>
         private void OnMenuChanged(object? sender, MenuChangedEventArgs e)
         {
-            // restore the previous menu if it was hidden to show the lookup UI
+            // restore the previous menu if it was hidden to show the npc menu
             if (e.NewMenu == null && (e.OldMenu is NPCMenu) && this.PreviousMenus.Value.Any())
                 Game1.activeClickableMenu = this.PreviousMenus.Value.Pop();
         }

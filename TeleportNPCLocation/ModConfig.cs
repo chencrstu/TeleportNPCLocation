@@ -6,8 +6,7 @@ namespace TeleportNPCLocation
 {
     internal class ModConfig
     {
-        /// <summary>The keys which toggle the lookup UI for something under the cursor.</summary>
+        /// <summary>The keys which toggle npc menu.</summary>
         public KeybindList ToggleNPCMenu { get; set; } = new(SButton.P);
     }
-
 }

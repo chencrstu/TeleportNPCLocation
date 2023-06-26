@@ -91,7 +91,7 @@ namespace TeleportNPCLocation.framework
         /****
         ** Events
         ****/
-        /// <summary>The method invoked when the player left-clicks on the lookup UI.</summary>
+        /// <summary>The method invoked when the player left-clicks on the npc menu.</summary>
         /// <param name="x">The X-position of the cursor.</param>
         /// <param name="y">The Y-position of the cursor.</param>
         /// <param name="playSound">Whether to enable sound.</param>
@@ -100,13 +100,13 @@ namespace TeleportNPCLocation.framework
             this.HandleLeftClick(x, y);
         }
 
-        /// <summary>The method invoked when the player right-clicks on the lookup UI.</summary>
+        /// <summary>The method invoked when the player right-clicks on the npc menu.</summary>
         /// <param name="x">The X-position of the cursor.</param>
         /// <param name="y">The Y-position of the cursor.</param>
         /// <param name="playSound">Whether to enable sound.</param>
         public override void receiveRightClick(int x, int y, bool playSound = true) { }
 
-        /// <summary>The method invoked when the player scrolls the mouse wheel on the lookup UI.</summary>
+        /// <summary>The method invoked when the player scrolls the mouse wheel on the npc menu.</summary>
         /// <param name="direction">The scroll direction.</param>
         public override void receiveScrollWheelAction(int direction)
         {
