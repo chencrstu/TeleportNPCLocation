@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -26,7 +28,10 @@ namespace TeleportNPCLocation
     /// <summary>The mod entry point.</summary>
     internal sealed class ModEntry : Mod
     {
-        // shoud find npc
+        /// <summary>The mod configuration.</summary>
+        private ModConfig Config = null!; // set in Entry
+
+        // shoud find npc, cli debug info
         private string  findNPCName = "Emily";
         private readonly string[] NPCNames = { "Robin", "Shane", "George", "Evelyn", "Alex", "Haley", "Emily", "Jodi", "Vincent", "Sam", "Clint", "Pierre", "Caroline", "Abigail", "Gus", "Willy", "Maru", "Demetrius", "Sebastian", "Linus", "Marnie", "Jas", "Leah", "Dwarf", "Bouncer", "Gunther", "Marlon", "Henchman", "Birdie", "Mister Qi" };
 
@@ -43,6 +48,7 @@ namespace TeleportNPCLocation
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
             helper.Events.Content.AssetRequested += this.OnAssetRequested;
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
+            helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 
             helper.ConsoleCommands.Add("teleport_setname", "Sets teleport to npc's name.\n\nUsage: teleport_setname <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.SetFindNPCName);
         }
@@ -50,6 +56,35 @@ namespace TeleportNPCLocation
         /*********
         ** Private methods
         *********/
+
+        /// <inheritdoc cref="IGameLoopEvents.GameLaunched"/>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+        {
+            this.Config = this.Helper.ReadConfig<ModConfig>();
+
+            // get Generic Mod Config Menu's API (if it's installed)
+            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (configMenu is null)
+                return;
+
+            // register mod
+            configMenu.Register(
+                mod: this.ModManifest,
+                reset: () => this.Config = new ModConfig(),
+                save: () => this.Helper.WriteConfig(this.Config)
+            );
+
+            // add config
+            configMenu.AddKeybindList(
+                mod: this.ModManifest,
+                name: () => "Toggle npc menu",
+                getValue: () => this.Config.ToggleNPCMenu,
+                setValue: value => this.Config.ToggleNPCMenu = value
+            );
+        }
+
         /// <summary>Set the player's money when the 'player_setmoney' command is invoked.</summary>
         /// <param name="command">The name of the command invoked.</param>
         /// <param name="args">The arguments received by the command. Each word after the command name is a separate argument.</param>
@@ -112,11 +147,8 @@ namespace TeleportNPCLocation
             if (!Context.IsWorldReady)
                 return;
 
-            // print button presses to the console window
-            this.Monitor.Log($"{Game1.player.Name} pressed {e.Button}.", LogLevel.Debug);
-
-
-            if (!e.Button.ToString().Equals("P"))
+            KeybindList toggleNPCMenu = this.Config.ToggleNPCMenu;
+            if (!toggleNPCMenu.JustPressed())
                 return;
 
             // try toggle npc menu list

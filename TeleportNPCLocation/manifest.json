@@ -1,5 +1,5 @@
 ﻿{
-  "Name": "TeleportNPCLocation",
+  "Name": "Teleport NPC Location",
   "Author": "ccr",
   "Version": "1.0.0",
   "Description": "teleport to NPC Location",
@@ -7,8 +7,5 @@
   "EntryDll": "TeleportNPCLocation.dll",
   "MinimumApiVersion": "3.0.0",
   "UpdateKeys": []
-  //"ContentPackFor": {
-  //  "UniqueID": "Pathoschild.ContentPatcher"
-  //}
 }
 
