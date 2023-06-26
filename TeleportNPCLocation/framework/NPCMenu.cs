@@ -328,7 +328,7 @@ namespace TeleportNPCLocation.framework
                         {
                             // draw title
                             {
-                                Vector2 nameSize = contentBatch.DrawTextBlock(font, $"可传送的npc列表", new Vector2(x + leftOffset, y + topOffset), wrapWidth, bold: false);
+                                Vector2 nameSize = contentBatch.DrawTextBlock(font, $"List of teleportable NPCs", new Vector2(x + leftOffset, y + topOffset), wrapWidth, bold: false);
                                 topOffset += nameSize.Y;
                             }
 
