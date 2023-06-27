@@ -259,7 +259,10 @@ namespace TeleportNPCLocation.framework
             {
                 if (component.containsPoint(x, y))
                 {
-                    this.teleportToNPCLocation(this.npcList[index]);
+                    TeleportHelper.teleportToNPCLocation(this.npcList[index]);
+
+                    // Close this menu
+                    this.exitThisMenu();
                     break;
                 }
                 index++;
@@ -411,69 +414,6 @@ namespace TeleportNPCLocation.framework
             this.Monitor.InterceptErrors("handling an error in the lookup code", () => this.exitThisMenu());
         }
 
-        private void teleportToNPCLocation(NPC npc)
-        {
-            // Get npc location
-            GameLocation location = npc.currentLocation;
-            // GameLocation Location = Utility.fuzzyLocationSearch(locationName);
-            if (location == null)
-            {
-                this.Monitor.Log($"Can't find npc location:{npc.Name}", LogLevel.Debug);
-                return;
-            }
-
-            DelayedAction.delayedBehavior teleportFunction = delegate {
-                //Insert here the coordinates you want to teleport to
-                //int[] offset = FindNPCAroundSpace(location, npc);
-                int[] offset = { 0, 0,0};
-
-                int X = npc.getTileX() + offset[0];
-                int Y = npc.getTileY() + offset[1];
-
-                // The direction you want the Farmer to face after the teleport
-                // 0 = up, 1 = right, 2 = down, 3 = left
-                int direction = offset[2];
-
-                // The teleport command itself
-                Game1.warpFarmer(new LocationRequest(location.NameOrUniqueName, location.uniqueName.Value != null, location), X, Y, direction);
-            };
-
-
-            // Delayed action to be executed after a set time (here 0,1 seconds)
-            // Teleporting without the delay may prove to be problematic
-            DelayedAction.functionAfterDelay(teleportFunction, 100);
-
-            // Close this menu
-            this.Monitor.Log("exit this menu", LogLevel.Debug);
-            this.exitThisMenu();
-        }
-
-        private int[] FindNPCAroundSpace(GameLocation location, NPC npc)
-        {
-            // Define offset array
-            int[,] tileOffset = { { -1, 0, 1 }, { 1, 0, 3 }, { 0, -1, 2 }, { 0, 1, 0 }, { -1, -1, 1 }, { 1, -1, 3 }, { -1, 1, 1 }, { 1, 1, 3 } };
-            int[] result = { 0, 0, 0 };
-
-            for (int i = 0; i < tileOffset.GetLength(0); i++)
-            {
-                int xTile = npc.getTileX() + tileOffset[i, 0];
-                int yTile = npc.getTileY() + tileOffset[i, 1];
-                this.Monitor.Log($"tieleOffsetX:{tileOffset[i, 0]},tieleOffsetY:{tileOffset[i, 1]}", LogLevel.Debug);
-
-                if (location.doesTileHaveProperty(xTile, yTile, "Water", "Back") != null)
-                    continue;
-
-                if (location.doesTileHaveProperty(xTile, yTile, "Passable", "Buildings") == null)
-                    continue;
-
-                result = new int[] { tileOffset[i, 0], tileOffset[i, 1], tileOffset[i, 2] };
-
-            }
-
-            this.Monitor.Log($"find npc around space:{result[0]},{result[1]},{result[2]}", LogLevel.Debug);
-
-            return result;
-        }
     }
 }
 

@@ -30,7 +30,6 @@ namespace TeleportNPCLocation
         private ModConfig Config = null!; // set in Entry
 
         // shoud find npc, cli debug info
-        private string  findNPCName = "Emily";
         private readonly string[] NPCNames = { "Robin", "Shane", "George", "Evelyn", "Alex", "Haley", "Emily", "Jodi", "Vincent", "Sam", "Clint", "Pierre", "Caroline", "Abigail", "Gus", "Willy", "Maru", "Demetrius", "Sebastian", "Linus", "Marnie", "Jas", "Leah", "Dwarf", "Bouncer", "Gunther", "Marlon", "Henchman", "Birdie", "Mister Qi" };
 
         /// <summary>The previous menus shown before the current npc menu was opened.</summary>
@@ -48,7 +47,7 @@ namespace TeleportNPCLocation
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 
-            helper.ConsoleCommands.Add("teleport_setname", "Sets teleport to npc's name.\n\nUsage: teleport_setname <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.SetFindNPCName);
+            helper.ConsoleCommands.Add("teleport_start", "start .\n\nUsage: teleport_start <value>\n- value: the npc name in below list.\n" + string.Join("\n", this.NPCNames), this.CommandStartTeleport);
         }
 
         /*********
@@ -86,10 +85,39 @@ namespace TeleportNPCLocation
         /// <summary>Set the player's money when the 'player_setmoney' command is invoked.</summary>
         /// <param name="command">The name of the command invoked.</param>
         /// <param name="args">The arguments received by the command. Each word after the command name is a separate argument.</param>
-        private void SetFindNPCName(string command, string[] args)
+        private void CommandStartTeleport(string command, string[] args)
         {
-            this.findNPCName = args[0];
-            this.Monitor.Log($"OK, set teleport to npc's name: {args[0]}.", LogLevel.Info);
+            string npcName = args.Count() > 0 ? args[0] : "Emily";
+            NPC npc = this.fetchNPCInfo(npcName);
+            if (npc == null)
+            {
+                this.Monitor.Log($"can't find npc info name: {npcName}.", LogLevel.Info);
+                return;
+            }
+                
+            TeleportHelper.teleportToNPCLocation(npc);
+        }
+
+        /// <summary>fetch npc info with name.</summary>
+        private NPC fetchNPCInfo(string name)
+        {
+            List<NPC> villagers = GetVillagers();
+            NPC findNPC = null;
+
+            foreach (var npc in villagers)
+            {
+                if (npc.currentLocation == null)
+                    continue;
+
+                string locationName = npc.currentLocation.uniqueName.Value ?? npc.currentLocation.Name;
+                GameLocation location = npc.currentLocation;
+                if (npc.Name.Equals(name))
+                {
+                    findNPC = npc;
+                    break;
+                }
+            }
+            return findNPC;
         }
 
         /// <inheritdoc cref="IDisplayEvents.MenuChanged"/>
@@ -180,36 +208,6 @@ namespace TeleportNPCLocation
             }
 
             return villagers;
-        }
-
-        private NPC getFindNPCInfo()
-        {
-            List<NPC> villagers = GetVillagers();
-            NPC findNPC = null;
-
-            foreach (var npc in villagers)
-            {
-                if (npc.currentLocation == null)
-                {
-                    continue;
-                }
-
-                string locationName = npc.currentLocation.uniqueName.Value ?? npc.currentLocation.Name;
-                GameLocation location = npc.currentLocation;
-
-                //this.Monitor.Log($"npc name:{npc.Name}", LogLevel.Debug);
-
-                if (npc.Name.Equals(this.findNPCName))
-                {
-                    findNPC = npc;
-                    string result = $"name:{npc.Name}, displayName:{npc.displayName}, location:{locationName}, x:{npc.getTileX()}, y: {npc.getTileY()}, birthday: {npc.Birthday_Day}, gender: {npc.Gender}, age: {npc.Age}\n";
-                    this.Monitor.Log($"find npc info:{result}", LogLevel.Debug);
-                    break;
-                }
-
-            }
-
-            return findNPC;
         }
 
         /****
