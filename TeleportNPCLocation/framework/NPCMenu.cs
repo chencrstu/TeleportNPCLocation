@@ -383,7 +383,7 @@ namespace TeleportNPCLocation.framework
                                     string value = npc.displayName ?? npc.Name;
                                     if (this.Config.showMoreInfo)
                                     {
-                                        value += $"\nlocation:{npc.currentLocation.NameOrUniqueName};titleX:{npc.getTileX()};titleY:{npc.getTileY()}";
+                                        value += $"\nlocation:{npc.currentLocation.NameOrUniqueName}";
                                     }
                                     Vector2 valueSize = contentBatch.DrawTextBlock(font, value, valuePosition, valueWidth);
                                     Vector2 rowSize = new Vector2(portraitWidth + valueWidth + cellPadding * 4, Math.Max(portraitSize.Y + cellPadding * 2, valueSize.Y + cellPadding * 2));
