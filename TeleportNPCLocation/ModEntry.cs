@@ -224,17 +224,16 @@ namespace TeleportNPCLocation
 
         private void hideNPCMenu()
         {
-            if (Game1.activeClickableMenu is NPCMenu)
+            this.Monitor.InterceptErrors("closing npc menu", () =>
             {
-                Game1.playSound("bigDeSelect"); // match default behaviour when closing a menu
-                Game1.activeClickableMenu = null;
-            }
+                if (Game1.activeClickableMenu is NPCMenu menu)
+                    menu.QueueExit();
+            });
         }
 
         private void showNPCMenu()
         {
-            StringBuilder logMessage = new("Received a npc list request...");
-            this.Monitor.InterceptErrors("fetch npc list", () =>
+            this.Monitor.InterceptErrors("opening npc menu", () =>
             {
                 List<NPC> villagers = GetVillagers();
 

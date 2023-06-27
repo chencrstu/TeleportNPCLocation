@@ -60,6 +60,9 @@ namespace TeleportNPCLocation.framework
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
 
+        /// <summary>Whether to exit the menu on the next update tick.</summary>
+        private bool ExitOnNextTick;
+
         /// <summary>The spacing around the scroll buttons.</summary>
         private readonly int ScrollButtonGutter = 15;
 
@@ -157,11 +160,22 @@ namespace TeleportNPCLocation.framework
             }
         }
 
+
+        /// <summary>Exit the menu at the next safe opportunity.</summary>
+        /// <remarks>This circumvents an issue where the game may freeze in some cases like the load selection screen when the menu is exited at an arbitrary time.</remarks>
+        public void QueueExit()
+        {
+            this.ExitOnNextTick = true;
+        }
+
         /// <summary>Update the menu state if needed.</summary>
         /// <param name="time">The elapsed game time.</param>
         public override void update(GameTime time)
         {
-            base.update(time);
+            if (this.ExitOnNextTick && this.readyToClose())
+                this.exitThisMenu();
+            else
+                base.update(time);
         }
 
         /// <summary>Clean up after the menu when it's disposed.</summary>
