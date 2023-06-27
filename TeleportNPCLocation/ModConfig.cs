@@ -4,9 +4,12 @@ using StardewModdingAPI.Utilities;
 
 namespace TeleportNPCLocation
 {
-    internal class ModConfig
+    public class ModConfig
     {
         /// <summary>The keys which toggle npc menu.</summary>
         public KeybindList ToggleNPCMenu { get; set; } = new(SButton.P);
+
+        /// <summary>show more npc info.</summary>
+        public bool showMoreInfo { get; set; } = true;
     }
 }

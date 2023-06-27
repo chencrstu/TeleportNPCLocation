@@ -238,7 +238,7 @@ namespace TeleportNPCLocation
             {
                 List<NPC> villagers = GetVillagers();
 
-                this.PushMenu(new NPCMenu(npcList: villagers, monitor: this.Monitor, scroll: 160));
+                this.PushMenu(new NPCMenu(npcList: villagers, monitor: this.Monitor, config:this.Config, scroll: 160));
 
             });
         }

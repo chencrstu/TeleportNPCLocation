@@ -36,6 +36,9 @@ namespace TeleportNPCLocation.framework
         /// <summary>Encapsulates logging and monitoring.</summary>
         private readonly IMonitor Monitor;
 
+        /// <summary>The mod configuration.</summary>
+        private readonly ModConfig Config;
+
         /// <summary>The amount to scroll long content on each up/down scroll.</summary>
         private readonly int ScrollAmount;
 
@@ -67,11 +70,12 @@ namespace TeleportNPCLocation.framework
         /// <remarks>This is enabled automatically when the menu detects a rare scissor rectangle error ("The scissor rectangle cannot be larger than or outside of the current render target bounds"). The menu will usually be pushed into the top-left corner when this is active, so it be disabled unless it's needed.</remarks>
         protected static bool UseSafeDimensions { get; set; }
 
-        public NPCMenu(List<NPC> npcList, IMonitor monitor, int scroll)
+        public NPCMenu(List<NPC> npcList, IMonitor monitor, ModConfig config, int scroll)
 		{
             // save data
             this.npcList = npcList;
             this.Monitor = monitor;
+            this.Config = config;
             this.ScrollAmount = scroll;
             this.WasHudEnabled = Game1.displayHUD;
 
@@ -348,6 +352,10 @@ namespace TeleportNPCLocation.framework
                                 int index = 0;
                                 foreach (NPC npc in this.npcList)
                                 {
+                                    // draw value label
+                                    if (npc.IsInvisible || npc.currentLocation == null)
+                                        continue;
+
                                     // draw Portrait
                                     Vector2 portraitPosition = new Vector2(x + leftOffset + cellPadding, y + topOffset + cellPadding);
                                     Vector2 portraitSize = new Vector2(NPC.portrait_width, NPC.portrait_height);
@@ -358,19 +366,24 @@ namespace TeleportNPCLocation.framework
 
                                     // draw value label
                                     Vector2 valuePosition = new Vector2(x + leftOffset + portraitWidth + cellPadding * 3, y + topOffset + cellPadding);
-                                    Vector2 valueSize = contentBatch.DrawTextBlock(font, npc.displayName ?? npc.Name, valuePosition, valueWidth);
-                                    Vector2 rowSize = new Vector2(portraitWidth + valueWidth + cellPadding * 4, Math.Max(portraitSize.Y, valueSize.Y));
+                                    string value = npc.displayName ?? npc.Name;
+                                    if (this.Config.showMoreInfo)
+                                    {
+                                        value += $"\nlocation:{npc.currentLocation.NameOrUniqueName};titleX:{npc.getTileX()};titleY:{npc.getTileY()}";
+                                    }
+                                    Vector2 valueSize = contentBatch.DrawTextBlock(font, value, valuePosition, valueWidth);
+                                    Vector2 rowSize = new Vector2(portraitWidth + valueWidth + cellPadding * 4, Math.Max(portraitSize.Y + cellPadding * 2, valueSize.Y + cellPadding * 2));
 
                                     // draw table row
                                     Color lineColor = Color.Gray;
                                     contentBatch.DrawLine(x + leftOffset, y + topOffset, new Vector2(rowSize.X, tableBorderWidth), lineColor); // top
-                                    contentBatch.DrawLine(x + leftOffset, y + topOffset + rowSize.Y + cellPadding * 2, new Vector2(rowSize.X, tableBorderWidth), lineColor); // bottom
+                                    contentBatch.DrawLine(x + leftOffset, y + topOffset + rowSize.Y, new Vector2(rowSize.X, tableBorderWidth), lineColor); // bottom
                                     contentBatch.DrawLine(x + leftOffset, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // left
                                     contentBatch.DrawLine(x + leftOffset + portraitWidth + cellPadding * 2, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // middle
                                     contentBatch.DrawLine(x + leftOffset + rowSize.X, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // right
 
                                     // update offset
-                                    topOffset += Math.Max(portraitSize.Y + cellPadding * 2, valueSize.Y);
+                                    topOffset += Math.Max(portraitSize.Y, valueSize.Y) + cellPadding * 2;
                                     index++;
                                 }
                             }
