@@ -80,6 +80,13 @@ namespace TeleportNPCLocation
                 getValue: () => this.Config.ToggleNPCMenu,
                 setValue: value => this.Config.ToggleNPCMenu = value
             );
+
+            configMenu.AddBoolOption(
+                mod: this.ModManifest,
+                name: () => "Show npc location",
+                getValue: () => this.Config.showMoreInfo,
+                setValue: value => this.Config.showMoreInfo = value
+            );
         }
 
         /// <summary>Set the player's money when the 'player_setmoney' command is invoked.</summary>

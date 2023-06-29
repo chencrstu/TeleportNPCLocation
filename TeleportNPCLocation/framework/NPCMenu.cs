@@ -54,6 +54,15 @@ namespace TeleportNPCLocation.framework
         /// <summary>The clickable 'scroll down' icon.</summary>
         private readonly ClickableTextureComponent ScrollDownButton;
 
+        /// <summary>The subjects available for searching indexed by name.</summary>
+        private readonly ILookup<string, NPC> SearchLookup;
+
+        /// <summary>The current search results.</summary>
+        private IEnumerable<NPC> SearchResults = Enumerable.Empty<NPC>();
+
+        /// <summary>The search input box.</summary>
+        private readonly SearchTextBox SearchTextbox;
+
         /// <summary> icon.</summary>
         private List<ClickableTextureComponent> teleportComponents;
 
@@ -81,19 +90,45 @@ namespace TeleportNPCLocation.framework
             this.Config = config;
             this.ScrollAmount = scroll;
             this.WasHudEnabled = Game1.displayHUD;
+            this.SearchLookup = npcList.ToLookup(p => p.displayName, StringComparer.OrdinalIgnoreCase);
+            this.SearchResults = this.npcList;
 
             // add scroll buttons
             this.ScrollUpButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.UpArrow, 1);
             this.ScrollDownButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.DownArrow, 1);
+            this.SearchTextbox = new SearchTextBox(Game1.smallFont, Color.Black);
 
             this.teleportComponents = new List<ClickableTextureComponent>();
 
             // update layout
             this.UpdateLayout();
+            this.SearchTextbox.Select();
+            this.SearchTextbox.OnChanged += (_, text) => this.ReceiveSearchTextboxChanged(text);
 
             // hide game HUD
             Game1.displayHUD = false;
         }
+
+        /// <summary>The method invoked when the player changes the search text.</summary>
+        /// <param name="search">The new search text.</param>
+        private void ReceiveSearchTextboxChanged(string? search)
+        {
+            // get search words
+            string[] words = (search ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (!words.Any())
+            {
+                this.SearchResults = this.npcList;
+                return;
+            }
+
+            // get matches
+            this.SearchResults = this.SearchLookup
+                .Where(entry => words.All(word => entry.Key.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0))
+                .SelectMany(entry => entry)
+                .OrderBy(npc => npc.displayName, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
 
         /****
         ** Events
@@ -182,6 +217,7 @@ namespace TeleportNPCLocation.framework
         public void Dispose()
         {
             this.ContentBlendState.Dispose();
+            this.SearchTextbox.Dispose();
 
             this.CleanupImpl();
         }
@@ -197,6 +233,7 @@ namespace TeleportNPCLocation.framework
         private void CleanupImpl()
         {
             Game1.displayHUD = this.WasHudEnabled;
+            this.SearchTextbox.Dispose();
         }
 
         /*********
@@ -264,12 +301,15 @@ namespace TeleportNPCLocation.framework
             if (!this.isWithinBounds(x, y))
                 this.exitThisMenu();
 
+            // search box
+            if (this.SearchTextbox.Bounds.Contains(x, y))
+                this.SearchTextbox.Select();
+
             // scroll up or down
             else if (this.ScrollUpButton.containsPoint(x, y))
                 this.ScrollUp();
             else if (this.ScrollDownButton.containsPoint(x, y))
                 this.ScrollDown();
-
 
             // teleport to npc location
             int index = 0;
@@ -350,21 +390,25 @@ namespace TeleportNPCLocation.framework
                             // draw title
                             {
                                 Vector2 nameSize = contentBatch.DrawTextBlock(font, $"List of teleportable NPCs", new Vector2(x + leftOffset, y + topOffset), wrapWidth, bold: false);
-                                topOffset += nameSize.Y;
+                                topOffset += (nameSize.Y + lineHeight);
                             }
 
-                            // draw spacer
-                            topOffset += lineHeight;
+                            // draw search text box
+                            {
+                                this.SearchTextbox.Bounds = new Rectangle(x: x + (int)leftOffset, y: y + (int)topOffset, width: (int)wrapWidth, height: this.SearchTextbox.Bounds.Height);
+                                this.SearchTextbox.Draw(contentBatch);
+                                topOffset += (this.SearchTextbox.Bounds.Height + lineHeight);
+                            }
 
                             // draw npc list
                             this.teleportComponents = new List<ClickableTextureComponent>();
-                            if (this.npcList.Count > 0)
+                            if (this.SearchResults.Any())
                             {
                                 float cellPadding = 3;
                                 float portraitWidth = NPC.portrait_width;
                                 float valueWidth = wrapWidth - portraitWidth - cellPadding * 4 - tableBorderWidth;
                                 int index = 0;
-                                foreach (NPC npc in this.npcList)
+                                foreach (NPC npc in this.SearchResults)
                                 {
                                     // draw value label
                                     if (npc.IsInvisible || npc.currentLocation == null)
