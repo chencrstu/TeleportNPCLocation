@@ -64,7 +64,8 @@ namespace TeleportNPCLocation.framework
         private readonly SearchTextBox SearchTextbox;
 
         /// <summary> icon.</summary>
-        private List<ClickableTextureComponent> teleportComponents;
+        private List<ClickableTextureComponent>
+            teleportComponents;
 
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
@@ -317,7 +318,7 @@ namespace TeleportNPCLocation.framework
             {
                 if (component.containsPoint(x, y))
                 {
-                    TeleportHelper.teleportToNPCLocation(this.npcList[index]);
+                    TeleportHelper.teleportToNPCLocation(this.SearchResults.ElementAt(index));
 
                     // Close this menu
                     this.exitThisMenu();
