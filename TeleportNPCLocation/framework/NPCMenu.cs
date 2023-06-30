@@ -167,6 +167,15 @@ namespace TeleportNPCLocation.framework
             this.UpdateLayout();
         }
 
+        /// <summary>The method invoked when the player presses an input button.</summary>
+        /// <param name="key">The pressed input.</param>
+        public override void receiveKeyPress(Keys key)
+        {
+            // deliberately avoid calling base, which may let another key close the menu
+            if (key.Equals(Keys.Escape))
+                this.exitThisMenu();
+        }
+
         /// <summary>The method called when the player presses a controller button.</summary>
         /// <param name="button">The controller button pressed.</param>
         public override void receiveGamePadButton(Buttons button)
