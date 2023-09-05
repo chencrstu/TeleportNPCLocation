@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Xml.Linq;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,6 +13,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 using static System.Net.Mime.MediaTypeNames;
+using static StardewValley.LocationRequest;
 
 namespace TeleportNPCLocation.framework
 {
@@ -30,8 +34,11 @@ namespace TeleportNPCLocation.framework
             ColorDestinationBlend = Blend.InverseSourceAlpha
         };
 
-        /// <summary>The nps list.</summary>
+        /// <summary>The npc list.</summary>
         private List<NPC> npcList;
+
+        /// <summary>ban npc list.</summary>
+        public List<string> BanNPCList;
 
         /// <summary>Encapsulates logging and monitoring.</summary>
         private readonly IMonitor Monitor;
@@ -66,6 +73,9 @@ namespace TeleportNPCLocation.framework
         /// <summary> icon.</summary>
         private List<ClickableTextureComponent>
             teleportComponents;
+        /// <summary> checkbox.</summary>
+        private List<Checkbox>
+            banCheckboxComponents;
 
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
@@ -83,7 +93,9 @@ namespace TeleportNPCLocation.framework
         /// <remarks>This is enabled automatically when the menu detects a rare scissor rectangle error ("The scissor rectangle cannot be larger than or outside of the current render target bounds"). The menu will usually be pushed into the top-left corner when this is active, so it be disabled unless it's needed.</remarks>
         protected static bool UseSafeDimensions { get; set; }
 
-        public NPCMenu(List<NPC> npcList, IMonitor monitor, ModConfig config, int scroll)
+        public Action<List<string>> Callback { get; set; }
+
+        public NPCMenu(List<NPC> npcList, IMonitor monitor, ModConfig config, int scroll, Action<List<string>> callback)
 		{
             // save data
             this.npcList = npcList;
@@ -93,6 +105,8 @@ namespace TeleportNPCLocation.framework
             this.WasHudEnabled = Game1.displayHUD;
             this.SearchLookup = npcList.ToLookup(p => p.displayName, StringComparer.OrdinalIgnoreCase);
             this.SearchResults = this.npcList;
+            this.BanNPCList = new List<string>();
+            this.Callback = callback;
 
             // add scroll buttons
             this.ScrollUpButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.UpArrow, 1);
@@ -242,6 +256,7 @@ namespace TeleportNPCLocation.framework
         /// <summary>Perform cleanup specific to the lookup menu.</summary>
         private void CleanupImpl()
         {
+            this.Callback(this.BanNPCList);
             Game1.displayHUD = this.WasHudEnabled;
             this.SearchTextbox.Dispose();
         }
@@ -335,8 +350,22 @@ namespace TeleportNPCLocation.framework
                 }
                 index++;
             }
+
+            foreach (Checkbox checkbox in this.banCheckboxComponents)
+            {
+                checkbox.Update();
+            }
         }
 
+        public void HandleCheckBoxClick(Checkbox box)
+        {
+            if (box.Checked)
+                this.BanNPCList.Remove(box.id);
+            else
+                this.BanNPCList.Add(box.id);
+
+            this.Monitor.Log($"box:{box.id}, checked:{box.Checked}", LogLevel.Warn);
+        }
 
         /// <summary>Render the UI.</summary>
         /// <param name="spriteBatch">The sprite batch being drawn.</param>
@@ -412,6 +441,7 @@ namespace TeleportNPCLocation.framework
 
                             // draw npc list
                             this.teleportComponents = new List<ClickableTextureComponent>();
+                            this.banCheckboxComponents = new List<Checkbox>();
                             if (this.SearchResults.Any())
                             {
                                 float cellPadding = 3;
@@ -441,6 +471,15 @@ namespace TeleportNPCLocation.framework
                                     }
                                     Vector2 valueSize = contentBatch.DrawTextBlock(font, value, valuePosition, valueWidth);
                                     Vector2 rowSize = new Vector2(portraitWidth + valueWidth + cellPadding * 4, Math.Max(portraitSize.Y + cellPadding * 2, valueSize.Y + cellPadding * 2));
+
+                                    // draw text box
+                                    Checkbox checkbox = new Checkbox();
+                                    checkbox.Position = new Vector2(x + leftOffset + rowSize.X - checkbox.Width - 4, y + topOffset + (portraitWidth - checkbox.Height) / 2);
+                                    checkbox.Callback = (Checkbox e) => this.HandleCheckBoxClick(e);
+                                    checkbox.Checked = !this.BanNPCList.Contains(npc.Name);
+                                    checkbox.id = npc.Name;
+                                    checkbox.Draw(contentBatch);
+                                    this.banCheckboxComponents.Add(checkbox);
 
                                     // draw table row
                                     Color lineColor = Color.Gray;

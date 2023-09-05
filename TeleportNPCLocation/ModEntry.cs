@@ -18,9 +18,6 @@ using xTile.Dimensions;
 using xTile.Layers;
 using xTile.Tiles;
 
-// 1. 获取npc的位置 done
-// 2. 定位可传送位置，碰撞检测 doing
-// 3. 实现传送能力 done
 namespace TeleportNPCLocation
 {
     /// <summary>The mod entry point.</summary>
@@ -43,7 +40,6 @@ namespace TeleportNPCLocation
         public override void Entry(IModHelper helper)
         {
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
-            helper.Events.Content.AssetRequested += this.OnAssetRequested;
             helper.Events.Display.MenuChanged += this.OnMenuChanged;
             helper.Events.GameLoop.GameLaunched += this.OnGameLaunched;
 
@@ -86,6 +82,13 @@ namespace TeleportNPCLocation
                 name: () => "Show npc location",
                 getValue: () => this.Config.showMoreInfo,
                 setValue: value => this.Config.showMoreInfo = value
+            );
+
+            configMenu.AddTextOption(
+                mod: this.ModManifest,
+                name: () => "Ban npc list",
+                getValue: () => this.Config.banNPCListString,
+                setValue: value => this.Config.banNPCListString = value
             );
         }
 
@@ -137,37 +140,6 @@ namespace TeleportNPCLocation
                 Game1.activeClickableMenu = this.PreviousMenus.Value.Pop();
         }
 
-        /// <inheritdoc cref="IContentEvents.AssetRequested"/>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event data.</param>
-        private void OnAssetRequested(object sender, AssetRequestedEventArgs e)
-        {
-            if (e.Name.IsEquivalentTo("Maps/Town"))
-            {
-                e.Edit(asset =>
-                {
-                    IAssetDataForMap editor = asset.AsMap();
-                    Map map = editor.Data;
-
-                    // your code here
-                });
-            }
-        }
-
-        /// <summary>Get a tile from the map.</summary>
-        /// <param name="map">The map instance.</param>
-        /// <param name="layerName">The name of the layer from which to get a tile.</param>
-        /// <param name="tileX">The X position measured in tiles.</param>
-        /// <param name="tileY">The Y position measured in tiles.</param>
-        /// <returns>Returns the tile if found, else <c>null</c>.</returns>
-        private Tile GetTile(Map map, string layerName, int tileX, int tileY)
-        {
-            Layer layer = map.GetLayer(layerName);
-            Location pixelPosition = new Location(tileX * Game1.tileSize, tileY * Game1.tileSize);
-
-            return layer.PickTile(pixelPosition, Game1.viewport.Size);
-        }
-
         /*********
         ** Private methods
         *********/
@@ -198,6 +170,28 @@ namespace TeleportNPCLocation
                     where building.indoors.Value != null
                     select building.indoors.Value
                 );
+        }
+
+        /// <summary>Parse ban npc list string.</summary>
+        private string[] ParseBanNPCListString()
+        {
+            return this.Config.banNPCListString.Split('|').Where(s=>!string.IsNullOrEmpty(s)).ToArray();
+        }
+
+        private void AppendBanList(List<string> banList)
+        {
+            if (banList.Any())
+            {
+                string finals = this.Config.banNPCListString;
+                if (finals.Length > 0)
+                {
+                    finals += "|";
+                }
+                finals += String.Join("|", banList);
+                this.Config.banNPCListString = finals;
+                this.Helper.WriteConfig(this.Config);
+                this.Monitor.Log($"current ban npc list: {finals}.", LogLevel.Info);
+            }
         }
 
         /// <summary>Get only relevant villagers for the world map.</summary>
@@ -242,9 +236,9 @@ namespace TeleportNPCLocation
         {
             this.Monitor.InterceptErrors("opening npc menu", () =>
             {
-                List<NPC> villagers = GetVillagers();
+                List<NPC> villagers = GetVillagers().Where(npc=>!this.ParseBanNPCListString().Contains(npc.Name)).ToList();
 
-                this.PushMenu(new NPCMenu(npcList: villagers, monitor: this.Monitor, config:this.Config, scroll: 160));
+                this.PushMenu(new NPCMenu(npcList: villagers, monitor: this.Monitor, config:this.Config, scroll: 160, callback:(s)=>this.AppendBanList(s)));
 
             });
         }
