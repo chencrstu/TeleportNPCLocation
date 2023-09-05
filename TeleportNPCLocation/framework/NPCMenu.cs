@@ -73,9 +73,13 @@ namespace TeleportNPCLocation.framework
         /// <summary> icon.</summary>
         private List<ClickableTextureComponent>
             teleportComponents;
+        /// <summary> icon data.</summary>
+        private IDictionary<ClickableTextureComponent, NPC> teleportComponentsData = new Dictionary<ClickableTextureComponent, NPC>();
         /// <summary> checkbox.</summary>
         private List<Checkbox>
             banCheckboxComponents;
+        /// <summary> checkbox data.</summary>
+        private IDictionary<Checkbox, NPC> banCheckboxComponentsData = new Dictionary<Checkbox, NPC>();
 
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
@@ -112,8 +116,6 @@ namespace TeleportNPCLocation.framework
             this.ScrollUpButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.UpArrow, 1);
             this.ScrollDownButton = new ClickableTextureComponent(Rectangle.Empty, CommonSprites.Icons.Sheet, CommonSprites.Icons.DownArrow, 1);
             this.SearchTextbox = new SearchTextBox(Game1.smallFont, Color.Black);
-
-            this.teleportComponents = new List<ClickableTextureComponent>();
 
             // update layout
             this.UpdateLayout();
@@ -337,18 +339,17 @@ namespace TeleportNPCLocation.framework
                 this.ScrollDown();
 
             // teleport to npc location
-            int index = 0;
             foreach (ClickableTextureComponent component in this.teleportComponents)
             {
                 if (component.containsPoint(x, y))
                 {
-                    TeleportHelper.teleportToNPCLocation(this.SearchResults.ElementAt(index));
+                    NPC npc = this.teleportComponentsData[component];
+                    TeleportHelper.teleportToNPCLocation(npc);
 
                     // Close this menu
                     this.exitThisMenu();
                     break;
                 }
-                index++;
             }
 
             foreach (Checkbox checkbox in this.banCheckboxComponents)
@@ -359,12 +360,13 @@ namespace TeleportNPCLocation.framework
 
         public void HandleCheckBoxClick(Checkbox box)
         {
+            NPC npc = this.banCheckboxComponentsData[box];
             if (box.Checked)
-                this.BanNPCList.Remove(box.id);
+                this.BanNPCList.Remove(npc.Name);
             else
-                this.BanNPCList.Add(box.id);
+                this.BanNPCList.Add(npc.Name);
 
-            this.Monitor.Log($"box:{box.id}, checked:{box.Checked}", LogLevel.Warn);
+            this.Monitor.Log($"npc:{npc.Name}, checked:{box.Checked}", LogLevel.Warn);
         }
 
         /// <summary>Render the UI.</summary>
@@ -441,7 +443,9 @@ namespace TeleportNPCLocation.framework
 
                             // draw npc list
                             this.teleportComponents = new List<ClickableTextureComponent>();
+                            this.teleportComponentsData = new Dictionary<ClickableTextureComponent, NPC>();
                             this.banCheckboxComponents = new List<Checkbox>();
+                            this.banCheckboxComponentsData = new Dictionary<Checkbox, NPC>();
                             if (this.SearchResults.Any())
                             {
                                 float cellPadding = 3;
@@ -461,6 +465,7 @@ namespace TeleportNPCLocation.framework
                                     teleportButton.bounds = new Rectangle((int)portraitPosition.X, (int)portraitPosition.Y, (int)portraitSize.X, (int)portraitSize.Y);
                                     teleportButton.draw(contentBatch);
                                     this.teleportComponents.Add(teleportButton);
+                                    this.teleportComponentsData[teleportButton] = npc;
 
                                     // draw value label
                                     Vector2 valuePosition = new Vector2(x + leftOffset + portraitWidth + cellPadding * 3, y + topOffset + cellPadding);
@@ -477,9 +482,9 @@ namespace TeleportNPCLocation.framework
                                     checkbox.Position = new Vector2(x + leftOffset + rowSize.X - checkbox.Width - 4, y + topOffset + (portraitWidth - checkbox.Height) / 2);
                                     checkbox.Callback = (Checkbox e) => this.HandleCheckBoxClick(e);
                                     checkbox.Checked = !this.BanNPCList.Contains(npc.Name);
-                                    checkbox.id = npc.Name;
                                     checkbox.Draw(contentBatch);
                                     this.banCheckboxComponents.Add(checkbox);
+                                    this.banCheckboxComponentsData[checkbox] = npc;
 
                                     // draw table row
                                     Color lineColor = Color.Gray;

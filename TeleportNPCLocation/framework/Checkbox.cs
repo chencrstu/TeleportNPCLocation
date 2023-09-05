@@ -22,7 +22,6 @@ namespace TeleportNPCLocation.framework
         public Action<Checkbox> Callback { get; set; }
 
         public bool Checked { get; set; } = true;
-        public string id { get; set; } = "default";
 
         /// <inheritdoc />
         public int Width => this.CheckedTextureRect.Width * 4;
