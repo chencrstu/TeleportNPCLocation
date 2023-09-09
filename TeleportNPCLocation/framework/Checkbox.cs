@@ -53,13 +53,6 @@ namespace TeleportNPCLocation.framework
         /// <inheritdoc />
         public void Update(bool isOffScreen = false)
         {
-            if (isOffScreen)
-            {
-                this.Hover = false;
-                this.ClickGestured = false;
-                return;
-            }
-
             int mouseX;
             int mouseY;
             if (Constants.TargetPlatform == GamePlatform.Android)
@@ -80,7 +73,7 @@ namespace TeleportNPCLocation.framework
 
             this.ClickGestured = (Game1.input.GetMouseState().LeftButton == ButtonState.Pressed && Game1.oldMouseState.LeftButton == ButtonState.Released);
             // gamepad support
-            // this.ClickGestured = this.ClickGestured || (Game1.options.gamepadControls && (Game1.input.GetGamePadState().IsButtonDown(Buttons.A) && !Game1.oldPadState.IsButtonDown(Buttons.A)));
+            this.ClickGestured = this.ClickGestured || (Game1.options.gamepadControls && (Game1.input.GetGamePadState().IsButtonDown(Buttons.A) && !Game1.oldPadState.IsButtonDown(Buttons.A)));
             if (this.Clicked && this.ClickedSound != null)
                 Game1.playSound(this.ClickedSound);
 
@@ -95,7 +88,6 @@ namespace TeleportNPCLocation.framework
         public void Draw(SpriteBatch b)
         {
             b.Draw(this.Texture, this.Position, this.Checked ? this.CheckedTextureRect : this.UncheckedTextureRect, Color.White, 0, Vector2.Zero, 4, SpriteEffects.None, 0);
-            Game1.activeClickableMenu?.drawMouse(b);
         }
     }
 }

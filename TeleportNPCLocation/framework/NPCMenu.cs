@@ -71,15 +71,8 @@ namespace TeleportNPCLocation.framework
         private readonly SearchTextBox SearchTextbox;
 
         /// <summary> icon.</summary>
-        private List<ClickableTextureComponent>
+        private List<ClickableComponent>
             teleportComponents;
-        /// <summary> icon data.</summary>
-        private IDictionary<ClickableTextureComponent, NPC> teleportComponentsData = new Dictionary<ClickableTextureComponent, NPC>();
-        /// <summary> checkbox.</summary>
-        private List<Checkbox>
-            banCheckboxComponents;
-        /// <summary> checkbox data.</summary>
-        private IDictionary<Checkbox, NPC> banCheckboxComponentsData = new Dictionary<Checkbox, NPC>();
 
         /// <summary>Whether the game HUD was enabled when the menu was opened.</summary>
         private readonly bool WasHudEnabled;
@@ -255,7 +248,7 @@ namespace TeleportNPCLocation.framework
             base.cleanupBeforeExit();
         }
 
-        /// <summary>Perform cleanup specific to the lookup menu.</summary>
+        /// <summary>Perform cleanup specific to the npc menu.</summary>
         private void CleanupImpl()
         {
             this.Callback(this.BanNPCList);
@@ -339,34 +332,39 @@ namespace TeleportNPCLocation.framework
                 this.ScrollDown();
 
             // teleport to npc location
-            foreach (ClickableTextureComponent component in this.teleportComponents)
+            foreach (ClickableComponent component in this.teleportComponents)
             {
-                if (component.containsPoint(x, y))
+                if (component.containsPoint(x, y) && component is NPCMenuItem)
                 {
-                    NPC npc = this.teleportComponentsData[component];
-                    TeleportHelper.teleportToNPCLocation(npc);
+                    NPCMenuItem menuItem = (NPCMenuItem)component;
 
-                    // Close this menu
-                    this.exitThisMenu();
+                    // click checkbox
+                    if (menuItem.isCheckBoxContainsPoint(x, y))
+                    {
+                        menuItem.checkbox.Update();
+                    }
+                    // click other area
+                    else
+                    {
+                        TeleportHelper.teleportToNPCLocation(menuItem.npc);
+                        // Close this menu
+                        this.exitThisMenu();
+                    }
+
                     break;
                 }
             }
-
-            foreach (Checkbox checkbox in this.banCheckboxComponents)
-            {
-                checkbox.Update();
-            }
         }
 
-        public void HandleCheckBoxClick(Checkbox box)
+        public void HandleCheckBoxClick(NPCMenuItem menuItem)
         {
-            NPC npc = this.banCheckboxComponentsData[box];
-            if (box.Checked)
+            NPC npc = menuItem.npc;
+            if (menuItem.checkbox.Checked)
                 this.BanNPCList.Remove(npc.Name);
             else
                 this.BanNPCList.Add(npc.Name);
 
-            this.Monitor.Log($"npc:{npc.Name}, checked:{box.Checked}", LogLevel.Warn);
+            this.Monitor.Log($"npc:{npc.Name}, checked:{menuItem.checkbox.Checked}", LogLevel.Warn);
         }
 
         /// <summary>Render the UI.</summary>
@@ -383,7 +381,6 @@ namespace TeleportNPCLocation.framework
                 float topOffset = gutter;
                 float contentWidth = this.width - gutter * 2;
                 float contentHeight = this.height - gutter * 2;
-                int tableBorderWidth = 1;
 
                 // get font
                 SpriteFont font = Game1.smallFont;
@@ -442,60 +439,24 @@ namespace TeleportNPCLocation.framework
                             }
 
                             // draw npc list
-                            this.teleportComponents = new List<ClickableTextureComponent>();
-                            this.teleportComponentsData = new Dictionary<ClickableTextureComponent, NPC>();
-                            this.banCheckboxComponents = new List<Checkbox>();
-                            this.banCheckboxComponentsData = new Dictionary<Checkbox, NPC>();
+                            this.teleportComponents = new List<ClickableComponent>();
                             if (this.SearchResults.Any())
                             {
-                                float cellPadding = 3;
-                                float portraitWidth = NPC.portrait_width;
-                                float valueWidth = wrapWidth - portraitWidth - cellPadding * 4 - tableBorderWidth;
                                 int index = 0;
                                 foreach (NPC npc in this.SearchResults)
                                 {
-                                    // draw value label
                                     if (npc.IsInvisible || npc.currentLocation == null)
                                         continue;
 
-                                    // draw Portrait
-                                    Vector2 portraitPosition = new Vector2(x + leftOffset + cellPadding, y + topOffset + cellPadding);
-                                    Vector2 portraitSize = new Vector2(NPC.portrait_width, NPC.portrait_height);
-                                    ClickableTextureComponent teleportButton = new ClickableTextureComponent(Rectangle.Empty, npc.Portrait, new Rectangle(0, 0, NPC.portrait_width, NPC.portrait_height), 1);
-                                    teleportButton.bounds = new Rectangle((int)portraitPosition.X, (int)portraitPosition.Y, (int)portraitSize.X, (int)portraitSize.Y);
-                                    teleportButton.draw(contentBatch);
-                                    this.teleportComponents.Add(teleportButton);
-                                    this.teleportComponentsData[teleportButton] = npc;
-
-                                    // draw value label
-                                    Vector2 valuePosition = new Vector2(x + leftOffset + portraitWidth + cellPadding * 3, y + topOffset + cellPadding);
-                                    string value = npc.displayName ?? npc.Name;
-                                    if (this.Config.showMoreInfo)
-                                    {
-                                        value += $"\nlocation:{npc.currentLocation.NameOrUniqueName}";
-                                    }
-                                    Vector2 valueSize = contentBatch.DrawTextBlock(font, value, valuePosition, valueWidth);
-                                    Vector2 rowSize = new Vector2(portraitWidth + valueWidth + cellPadding * 4, Math.Max(portraitSize.Y + cellPadding * 2, valueSize.Y + cellPadding * 2));
-
-                                    // draw text box
-                                    Checkbox checkbox = new Checkbox();
-                                    checkbox.Position = new Vector2(x + leftOffset + rowSize.X - checkbox.Width - 4, y + topOffset + (portraitWidth - checkbox.Height) / 2);
-                                    checkbox.Callback = (Checkbox e) => this.HandleCheckBoxClick(e);
-                                    checkbox.Checked = !this.BanNPCList.Contains(npc.Name);
-                                    checkbox.Draw(contentBatch);
-                                    this.banCheckboxComponents.Add(checkbox);
-                                    this.banCheckboxComponentsData[checkbox] = npc;
-
-                                    // draw table row
-                                    Color lineColor = Color.Gray;
-                                    contentBatch.DrawLine(x + leftOffset, y + topOffset, new Vector2(rowSize.X, tableBorderWidth), lineColor); // top
-                                    contentBatch.DrawLine(x + leftOffset, y + topOffset + rowSize.Y, new Vector2(rowSize.X, tableBorderWidth), lineColor); // bottom
-                                    contentBatch.DrawLine(x + leftOffset, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // left
-                                    contentBatch.DrawLine(x + leftOffset + portraitWidth + cellPadding * 2, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // middle
-                                    contentBatch.DrawLine(x + leftOffset + rowSize.X, y + topOffset, new Vector2(tableBorderWidth, rowSize.Y), lineColor); // right
+                                    bool check = !this.BanNPCList.Contains(npc.Name);
+                                    Vector2 position = new Vector2(x + leftOffset, y + topOffset);
+                                    NPCMenuItem menuItem = new NPCMenuItem(npc,index,this.Config.showMoreInfo);
+                                    menuItem.Draw(contentBatch, position, wrapWidth, font, check);
+                                    menuItem.Callback = (NPCMenuItem menuItem) => this.HandleCheckBoxClick(menuItem);
+                                    this.teleportComponents.Add(menuItem);
 
                                     // update offset
-                                    topOffset += Math.Max(portraitSize.Y, valueSize.Y) + cellPadding * 2;
+                                    topOffset += menuItem.bounds.Height;
                                     index++;
                                 }
                             }
@@ -515,7 +476,7 @@ namespace TeleportNPCLocation.framework
                     }
                     catch (ArgumentException ex) when (ex.ParamName == "value" && ex.StackTrace?.Contains("Microsoft.Xna.Framework.Graphics.GraphicsDevice.set_ScissorRectangle") == true)
                     {
-                        this.Monitor.Log("The viewport size seems to be inaccurate. Enabling compatibility mode; lookup menu may be misaligned.", LogLevel.Warn);
+                        this.Monitor.Log("The viewport size seems to be inaccurate. Enabling compatibility mode; npc menu may be misaligned.", LogLevel.Warn);
                         this.Monitor.Log(ex.ToString());
                         this.UpdateLayout();
                     }
@@ -536,7 +497,7 @@ namespace TeleportNPCLocation.framework
         /// <param name="ex">The intercepted exception.</param>
         private void OnDrawError(Exception ex)
         {
-            this.Monitor.InterceptErrors("handling an error in the lookup code", () => this.exitThisMenu());
+            this.Monitor.InterceptErrors("handling an error in the npc menu code", () => this.exitThisMenu());
         }
 
     }

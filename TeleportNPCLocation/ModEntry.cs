@@ -254,7 +254,7 @@ namespace TeleportNPCLocation
                 Game1.activeClickableMenu = menu;
         }
 
-        /// <summary>Get whether a given menu should be restored when the lookup ends.</summary>
+        /// <summary>Get whether a given menu should be restored when the npcmenu ends.</summary>
         /// <param name="menu">The menu to check.</param>
         private bool ShouldRestoreMenu(IClickableMenu? menu)
         {
